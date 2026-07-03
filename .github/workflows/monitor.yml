@@ -1,0 +1,39 @@
+name: Monitor tender candidate notice
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monitor-fzztb-candidate-notice
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check candidate notice
+        env:
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          STATE_FILE: monitor_state.json
+        run: python monitor_fzztb_wechat.py
+
+      - name: Save sent state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add monitor_state.json
+          git diff --cached --quiet || git commit -m "Update monitor state"
+          git push
